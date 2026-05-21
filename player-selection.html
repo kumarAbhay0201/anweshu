@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission: Crying Baby - Agent Selection</title>
+    <style>
+        /* Fiery & Engaging Arcade Theme Styling */
+        :root {
+            --bg-dark: #070202;
+            --neon-orange: #ff5500;
+            --neon-red: #ff2233;
+            --neon-gold: #ffcc00;
+            --text-white: #ffffff;
+            --text-gray: #a5a5b5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            /* Dynamic animated fiery background */
+            background: linear-gradient(-45deg, #1a0500, #3d0c00, #140200, #4f1505);
+            background-size: 400% 400%;
+            animation: firePulse 10s ease infinite;
+            color: var(--text-white);
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        @keyframes firePulse {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Arcade monitor scanlines */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+            z-index: 999;
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        .selection-container {
+            width: 90%;
+            max-width: 900px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        /* Mission Briefing Box */
+        .briefing-text {
+            font-size: 1.6rem;
+            line-height: 1.6;
+            min-height: 5.5rem;
+            margin-bottom: 2.5rem;
+            text-shadow: 0 0 10px rgba(255, 85, 0, 0.6);
+            letter-spacing: 1px;
+        }
+
+        .highlight-gold {
+            color: var(--neon-gold);
+            text-shadow: 0 0 15px var(--neon-gold);
+        }
+
+        /* Agent Grid Layout */
+        .agent-grid {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-bottom: 2.5rem;
+        }
+
+        /* Square Card Framing */
+        .agent-card {
+            width: 260px;
+            height: 260px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 4px solid var(--text-gray);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .agent-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0.6;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .agent-name {
+            position: relative;
+            z-index: 2;
+            background: rgba(0, 0, 0, 0.85);
+            width: 100%;
+            padding: 12px 0;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+            border-top: 2px solid transparent;
+            color: var(--text-gray);
+        }
+
+        /* Active Target Selection States */
+        .agent-card.active {
+            border-color: var(--neon-orange);
+            transform: scale(1.08) translateY(-5px);
+            box-shadow: 0 0 30px rgba(255, 85, 0, 0.6);
+        }
+
+        .agent-card.active .agent-img {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .agent-card.active .agent-name {
+            color: var(--neon-gold);
+            border-top-color: var(--neon-orange);
+            text-shadow: 0 0 8px var(--neon-gold);
+        }
+
+        /* Plot Twist Alert Toast */
+        #plot-twist-overlay {
+            color: var(--neon-red);
+            font-size: 1.5rem;
+            min-height: 2rem;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 12px var(--neon-red);
+            font-weight: bold;
+            visibility: hidden;
+        }
+
+        /* Footer System Controls Hint */
+        .control-footer {
+            font-size: 0.95rem;
+            color: var(--text-gray);
+            letter-spacing: 2px;
+            border-top: 2px dashed rgba(165, 165, 181, 0.2);
+            padding-top: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .key-badge {
+            background: #222;
+            border: 1px solid var(--text-white);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #fff;
+            display: inline-block;
+            margin: 0 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="selection-container">
+        
+        <div id="briefing" class="briefing-text"></div>
+
+        <div class="agent-grid">
+            <div class="agent-card active" id="card-sid">
+                <img src="agent-sid.png" alt="Agent Sid" class="agent-img">
+                <div class="agent-name">AGENT SID</div>
+            </div>
+            <div class="agent-card" id="card-jaskirat">
+                <img src="agent-jaskirat.jpg" alt="Agent Jaskirat" class="agent-img">
+                <div class="agent-name">AGENT JASKIRAT</div>
+            </div>
+        </div>
+
+        <div id="plot-twist-overlay">oops this is not your favorite</div>
+
+        <div class="control-footer">
+            Use <span class="key-badge">◀</span> or <span class="key-badge">▶</span> Arrow Keys to Browse • Press <span class="key-badge">ENTER</span> to Select Agent
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const briefingBox = document.getElementById('briefing');
+        const cardSid = document.getElementById('card-sid');
+        const cardJaskirat = document.getElementById('card-jaskirat');
+        const twistOverlay = document.getElementById('plot-twist-overlay');
+
+        // Dynamic State Flags
+        let activeSelectionIndex = 0; // 0 = Sid, 1 = Jaskirat
+        let selectionLocked = false;
+        let briefingCompleted = false;
+
+        // Background Audio Pipeline
+        const startingMusic = new Audio('starting-music.mp3');
+        startingMusic.loop = true;
+
+        // AUTOMATIC AUDIO TRIGGER: Attempts to fire music instantly on page load.
+        // It will work seamlessly when redirected via your game file!
+        window.addEventListener('DOMContentLoaded', () => {
+            startingMusic.play().catch(error => {
+                console.log("Autoplay context note: Waiting for a screen click/keypress if opened directly.");
+            });
+        });
+
+        // Safe fallback: If opened directly without context, it will catch any early keypress to start
+        window.addEventListener('keydown', () => {
+            if (startingMusic.paused) {
+                startingMusic.play().catch(() => {});
+            }
+        });
+
+        // Run Introduction Typewriter Flow
+        const briefingMsg = `we need to execute a rescue mission and the name is <span class="highlight-gold">"crying baby"</span>, select your favorite agent for this`;
+        
+        // Custom Synthesized Typewriter Tick Engine
+        function runTypewriter(element, htmlContent, speed, callback) {
+            element.innerHTML = "";
+            const temp = document.createElement('div');
+            temp.innerHTML = htmlContent;
+            const nodes = Array.from(temp.childNodes);
+            
+            let currentNodeIndex = 0;
+            let currentTextIndex = 0;
+
+            function type() {
+                if (currentNodeIndex >= nodes.length) {
+                    if (callback) callback();
+                    return;
+                }
+                let node = nodes[currentNodeIndex];
+
+                if (node.nodeType === Node.TEXT_NODE) {
+                    if (currentTextIndex < node.textContent.length) {
+                        element.innerHTML += node.textContent.charAt(currentTextIndex);
+                        currentTextIndex++;
+                        playCodedClick(600, 0.01); // Quick typing tap tone
+                        setTimeout(type, speed);
+                    } else {
+                        currentNodeIndex++;
+                        currentTextIndex = 0;
+                        setTimeout(type, speed);
+                    }
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    element.appendChild(node.cloneNode(true));
+                    currentNodeIndex++;
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+
+        // Trigger briefing instantly when page opens
+        setTimeout(() => {
+            runTypewriter(briefingBox, briefingMsg, 35, () => {
+                briefingCompleted = true; // Unlock selection processing window
+            });
+        }, 600);
+
+
+        /* --- PROCEDURAL AUDIO FX GENERATORS (No external asset file needed) --- */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playCodedClick(frequency, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSuccessChime() {
+            const now = audioCtx.currentTime;
+            // Upward synthesizer double-note chime
+            [523.25, 659.25].forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + (idx * 0.08));
+                gain.gain.setValueAtTime(0.2, now + (idx * 0.08));
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + (idx * 0.08) + 0.2);
+                osc.start(now + (idx * 0.08));
+                osc.stop(now + (idx * 0.08) + 0.2);
+            });
+        }
+
+
+        /* --- INTERACTION DECK HANDLING (Arrows + Enter) --- */
+        window.addEventListener('keydown', (e) => {
+            if (!briefingCompleted || selectionLocked) return;
+
+            // Horizontal Arrow Steering Track
+            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                twistOverlay.style.visibility = "hidden"; // Clear lingering twist text
+                
+                // Toggle active index
+                activeSelectionIndex = activeSelectionIndex === 0 ? 1 : 0;
+                playCodedClick(300, 0.05); // Play heavy selection shift blip
+
+                // Adjust DOM card classes accordingly
+                if (activeSelectionIndex === 0) {
+                    cardSid.classList.add('active');
+                    cardJaskirat.classList.remove('active');
+                } else {
+                    cardJaskirat.classList.add('active');
+                    cardSid.classList.remove('active');
+                }
+            }
+
+            // Enter Action Trigger Configuration
+            if (e.key === "Enter") {
+                if (activeSelectionIndex === 1) {
+                    // PLOT TWIST: Agent Jaskirat fails verification check
+                    playCodedClick(180, 0.2); // Low rejection buzz
+                    twistOverlay.style.visibility = "visible";
+                } else {
+                    // SUCCESSFUL ACCESS: Agent Sid chosen
+                    selectionLocked = true;
+                    playSuccessChime();
+                    twistOverlay.style.color = "var(--neon-green)";
+                    twistOverlay.style.textShadow = "0 0 15px var(--neon-green)";
+                    twistOverlay.innerText = "AGENT VERIFIED! INITIATING DROPOUT ROUTINE...";
+                    twistOverlay.style.visibility = "visible";
+
+                    // Kill music stream loop cleanly and jump to level-one.html
+                    setTimeout(() => {
+                        startingMusic.pause();
+                        window.location.href = 'level-one.html';
+                    }, 2000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

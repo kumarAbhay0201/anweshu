@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 1: Fullscreen Practice Range</title>
+    <style>
+        :root {
+            --bg-dark: #070202;
+            --neon-blue: #00f0ff;
+            --neon-pink: #ff007f;
+            --neon-green: #33ff99;
+            --neon-red: #ff2233;
+            --neon-gold: #ffcc00;
+            --text-white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            overflow: hidden;
+        }
+
+        /* Ambient arcade monitor scanlines overlay */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            z-index: 999;
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Modern HUD Top Progress Bar Row Grid */
+        #hudContainer {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .hud-group {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .hud-metric {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .hud-label {
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .bar-container {
+            width: 180px;
+            height: 14px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 100%;
+            transition: width 0.15s ease-out;
+        }
+
+        #agentHpBar { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+        #shieldBar { background: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); }
+        #enemyHpBar { background: var(--neon-red); box-shadow: 0 0 8px var(--neon-red); }
+
+        .ammo-counter {
+            font-size: 1.4rem;
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255,255,255,0.5);
+        }
+
+        /* 10-Second Countdown Overlay */
+        #countdownOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 2, 2, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        #countdownTimer {
+            font-size: 7rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 25px var(--neon-pink);
+            margin-bottom: 2rem;
+            animation: pulse 1s infinite alternate;
+        }
+
+        .guide-box {
+            border: 2px dashed var(--neon-blue);
+            background: rgba(0, 240, 255, 0.04);
+            padding: 1.5rem 2.5rem;
+            border-radius: 12px;
+            text-align: left;
+            width: 90%;
+            max-width: 520px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+
+        .guide-box h3 {
+            color: var(--neon-blue);
+            text-align: center;
+            margin-bottom: 1.2rem;
+            letter-spacing: 3px;
+        }
+
+        .guide-line {
+            font-size: 1.2rem;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .key-badge {
+            background: #25252b;
+            border: 1px solid #fff;
+            padding: 2px 10px;
+            border-radius: 4px;
+        }
+
+        /* Arcade Scorecard End Screen Overlay */
+        #scorecardOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 2, 2, 0.95);
+            display: none; /* Block-activated upon game conclusion */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .score-box {
+            border: 4px solid #fff;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 3rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            transform: scale(0.8);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .score-box.pop-up {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .score-box h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+        }
+
+        .score-box p {
+            font-size: 1.2rem;
+            color: var(--text-gray);
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .score-buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .score-btn {
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: inherit;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .btn-fight {
+            background-color: var(--neon-gold);
+            color: #000;
+        }
+        .btn-fight:hover {
+            background-color: #ffe066;
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px var(--neon-gold);
+        }
+
+        .btn-retry {
+            background-color: #333;
+            color: #fff;
+            border: 2px solid #555;
+        }
+        .btn-retry:hover {
+            background-color: #444;
+            border-color: #fff;
+            transform: translateY(-3px);
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gameContainer">
+        <div id="hudContainer">
+            <div class="hud-group">
+                <div class="hud-metric">
+                    <span class="hud-label" style="color: var(--neon-green)">AGENT HP</span>
+                    <div class="bar-container"><div id="agentHpBar" class="progress-bar"></div></div>
+                </div>
+                <div class="hud-metric">
+                    <span class="hud-label" style="color: var(--neon-blue)">SHIELD CAP</span>
+                    <div class="bar-container"><div id="shieldBar" class="progress-bar"></div></div>
+                </div>
+                <div class="hud-metric">
+                    <span class="hud-label" style="color: #ffffff">AMMO</span>
+                    <div id="ammoDisplay" class="ammo-counter">100/100</div>
+                </div>
+            </div>
+
+            <div class="hud-group">
+                <div class="hud-metric" style="align-items: flex-end;">
+                    <span id="enemyLabel" class="hud-label" style="color: var(--neon-red)">ENEMY TRACKER (1/3)</span>
+                    <div class="bar-container"><div id="enemyHpBar" class="progress-bar"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="countdownOverlay">
+            <div id="countdownTimer">10</div>
+            <div class="guide-box">
+                <h3>TRAINING SYSTEM INSTRUCTIONS</h3>
+                <div class="guide-line"><span>JUMP OVER OBSTACLES:</span> <span class="key-badge">SPACEBAR</span></div>
+                <div class="guide-line"><span>DEFENSIVE SHIELD:</span> <span class="key-badge">S KEY</span></div>
+                <div class="guide-line"><span>FIRE PLASMA GUN:</span> <span class="key-badge">F KEY</span></div>
+            </div>
+        </div>
+
+        <div id="scorecardOverlay">
+            <div id="scoreBox" class="score-box">
+                <h2 id="scoreHeader">MATCH RESULTS</h2>
+                <p id="scoreMessage">Analyzing battle data metrics...</p>
+                <div class="score-buttons-container" id="scoreButtons">
+                    </div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const countdownOverlay = document.getElementById('countdownOverlay');
+        const countdownTimer = document.getElementById('countdownTimer');
+
+        // Scorecard DOM hooks
+        const scorecardOverlay = document.getElementById('scorecardOverlay');
+        const scoreBox = document.getElementById('scoreBox');
+        const scoreHeader = document.getElementById('scoreHeader');
+        const scoreMessage = document.getElementById('scoreMessage');
+        const scoreButtons = document.getElementById('scoreButtons');
+
+        // Dynamic HUD Registers
+        const agentHpBar = document.getElementById('agentHpBar');
+        const shieldBar = document.getElementById('shieldBar');
+        const ammoDisplay = document.getElementById('ammoDisplay');
+        const enemyLabel = document.getElementById('enemyLabel');
+        const enemyHpBar = document.getElementById('enemyHpBar');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Music Stream Configuration
+        const bgMusic = new Audio('game-background.mp3');
+        bgMusic.loop = true;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playCodedSound(type) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'jump') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(650, now + 0.14);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+                osc.start(now); osc.stop(now + 0.14);
+            } else if (type === 'fire') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(750, now);
+                osc.frequency.linearRampToValueAtTime(150, now + 0.08);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'shield') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.linearRampToValueAtTime(480, now + 0.18);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+                osc.start(now); osc.stop(now + 0.18);
+            } else if (type === 'hover') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
+            }
+        }
+
+        // 10 Second Countdown Sequence Tracking Logic
+        let countdownValue = 10;
+        let isGameRunning = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            bgMusic.play().catch(() => {});
+        });
+
+        window.addEventListener('keydown', function engageAudioContext() {
+            if(bgMusic.paused) bgMusic.play();
+            window.removeEventListener('keydown', engageAudioContext);
+        });
+
+        const countdownInterval = setInterval(() => {
+            countdownValue--;
+            countdownTimer.innerText = countdownValue;
+            if (countdownValue <= 0) {
+                clearInterval(countdownInterval);
+                countdownOverlay.style.display = 'none';
+                isGameRunning = true;
+                gameLoop();
+            }
+        }, 1000);
+
+        /* --- STABLE SCENARIO OBJECT PARAMETERS --- */
+        const getGroundY = () => canvas.height - 120;
+
+        const player = {
+            x: 250, 
+            y: 0,
+            width: 44,
+            height: 78,
+            vy: 0,
+            gravity: 0.65,
+            isJumping: false,
+            hp: 100,
+            shieldHp: 100,
+            shieldActive: false,
+            ammo: 100
+        };
+
+        let currentWaveIndex = 1;
+        const totalWavesCount = 3;
+
+        const enemy = {
+            x: 0,
+            y: 0,
+            width: 46,
+            height: 78,
+            hp: 100,
+            fireCooldown: 0,
+            active: true
+        };
+
+        function spawnEnemyWave(waveNumber) {
+            enemy.x = canvas.width - 250;
+            enemy.y = getGroundY() - enemy.height;
+            enemy.hp = 100;
+            enemy.fireCooldown = 0;
+            enemy.active = true;
+            enemyLabel.innerText = `ENEMY TRACKER (${waveNumber}/${totalWavesCount})`;
+        }
+
+        // Particle Engines Arrays
+        const bloodParticles = [];
+        const fireParticles = [];
+        const rocks = [];
+        const playerBullets = [];
+        const enemyBullets = [];
+
+        let rockSpawnTimer = 0;
+        let starBackgroundOffset = 0;
+
+        function triggerBloodBurst(x, y) {
+            for (let i = 0; i < 25; i++) {
+                bloodParticles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() * 4 - 2),
+                    vy: (Math.random() * -5 - 2),
+                    radius: Math.random() * 3 + 1.5,
+                    alpha: 1,
+                    decay: Math.random() * 0.03 + 0.02
+                });
+            }
+        }
+
+        function pushFireParticle() {
+            fireParticles.push({
+                x: Math.random() * canvas.width,
+                y: canvas.height,
+                vx: Math.random() * 1.5 - 0.75,
+                vy: Math.random() * -3 - 1,
+                size: Math.random() * 20 + 8,
+                hue: Math.random() * 25 + 10,
+                alpha: 1,
+                decay: Math.random() * 0.015 + 0.01
+            });
+        }
+
+        const pressedKeys = {};
+        window.addEventListener('keydown', (e) => {
+            pressedKeys[e.key.toLowerCase()] = true;
+            if (!isGameRunning) return;
+
+            if (e.key === " " || e.key === "Spacebar") {
+                if (!player.isJumping) {
+                    player.vy = -14.5;
+                    player.isJumping = true;
+                    playCodedSound('jump');
+                }
+            }
+            if (e.key.toLowerCase() === 'f') {
+                if (player.ammo > 0) {
+                    player.ammo--;
+                    playerBullets.push({ x: player.x + player.width, y: player.y + 28, speed: 13 });
+                    playCodedSound('fire');
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            pressedKeys[e.key.toLowerCase()] = false;
+        });
+
+        function checkBoxesOverlapping(r1, r2) {
+            return r1.x < r2.x + r2.width &&
+                   r1.x + r1.width > r2.x &&
+                   r1.y < r2.y + r2.height &&
+                   r1.y + r1.height > r2.y;
+        }
+
+        player.y = getGroundY() - player.height;
+        spawnEnemyWave(currentWaveIndex);
+
+        /* --- CORE GAME LOOP ROUTINE --- */
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            updateGameData();
+            renderGraphicsFrame();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateGameData() {
+            const groundFloorLine = getGroundY();
+
+            agentHpBar.style.width = `${Math.max(0, player.hp)}%`;
+            shieldBar.style.width = `${Math.max(0, player.shieldHp)}%`;
+            enemyHpBar.style.width = `${Math.max(0, enemy.hp)}%`;
+            ammoDisplay.innerText = `${player.ammo}/100`;
+
+            if (!player.shieldActive && player.shieldHp < 100) {
+                player.shieldHp += 0.05;
+            }
+
+            if (Math.random() < 0.4) pushFireParticle();
+
+            starBackgroundOffset -= 1.5;
+            if (starBackgroundOffset <= -canvas.width) starBackgroundOffset = 0;
+
+            if (pressedKeys['s'] && player.shieldHp > 0) {
+                if (!player.shieldActive) playCodedSound('shield');
+                player.shieldActive = true;
+            } else {
+                player.shieldActive = false;
+            }
+
+            player.vy += player.gravity;
+            player.y += player.vy;
+
+            if (player.y > groundFloorLine - player.height) {
+                player.y = groundFloorLine - player.height;
+                player.vy = 0;
+                player.isJumping = false;
+            }
+
+            rockSpawnTimer++;
+            if (rockSpawnTimer > 150) {
+                rocks.push({ x: canvas.width, y: groundFloorLine - 35, width: 55, height: 35, hitRegistered: false });
+                rockSpawnTimer = 0;
+            }
+
+            for (let i = rocks.length - 1; i >= 0; i--) {
+                rocks[i].x -= 5.5;
+
+                let rBox = { x: rocks[i].x, y: rocks[i].y, width: rocks[i].width, height: rocks[i].height };
+                let pBox = { x: player.x, y: player.y, width: player.width, height: player.height };
+
+                if (checkBoxesOverlapping(pBox, rBox)) {
+                    if (player.vy > 0 && player.y + player.height - player.vy <= rocks[i].y + 12) {
+                        player.y = rocks[i].y - player.height;
+                        player.vy = 0;
+                        player.isJumping = false;
+                    } else if (!rocks[i].hitRegistered) {
+                        rocks[i].hitRegistered = true;
+                        if (!player.shieldActive) {
+                            player.hp -= 5;
+                            triggerBloodBurst(player.x + player.width/2, player.y - 10);
+                        } else {
+                            player.shieldHp -= 20;
+                        }
+                    }
+                }
+
+                if (rocks[i].x + rocks[i].width < 0) rocks.splice(i, 1);
+            }
+
+            for (let i = playerBullets.length - 1; i >= 0; i--) {
+                playerBullets[i].x += playerBullets[i].speed;
+                let b = playerBullets[i];
+
+                if (enemy.active && b.x > enemy.x && b.x < enemy.x + enemy.width && b.y > enemy.y && b.y < enemy.y + enemy.height) {
+                    enemy.hp -= 25; 
+                    playerBullets.splice(i, 1);
+                    
+                    if (enemy.hp <= 0) {
+                        enemy.active = false;
+                        enemy.hp = 0;
+                        handleEnemyCasualty();
+                    }
+                    continue;
+                }
+                if (b.x > canvas.width) playerBullets.splice(i, 1);
+            }
+
+            if (enemy.active) {
+                enemy.fireCooldown++;
+                if (enemy.fireCooldown > 85) {
+                    enemyBullets.push({ x: enemy.x - 12, y: enemy.y + 28, speed: -7.5 });
+                    playCodedSound('fire');
+                    enemy.fireCooldown = 0;
+                }
+            }
+
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                enemyBullets[i].x += enemyBullets[i].speed;
+                let eb = enemyBullets[i];
+                
+                let bBox = { x: eb.x, y: eb.y, width: 14, height: 5 };
+                let pBox = { x: player.x, y: player.y, width: player.width, height: player.height };
+
+                if (checkBoxesOverlapping(bBox, pBox)) {
+                    if (player.shieldActive) {
+                        player.shieldHp -= 15;
+                    } else {
+                        player.hp -= 10;
+                        triggerBloodBurst(player.x + player.width/2, player.y - 10);
+                    }
+                    enemyBullets.splice(i, 1);
+                    continue;
+                }
+                if (eb.x < 0) enemyBullets.splice(i, 1);
+            }
+
+            for (let i = bloodParticles.length - 1; i >= 0; i--) {
+                let bp = bloodParticles[i];
+                bp.x += bp.vx;
+                bp.y += bp.vy;
+                bp.vy += 0.2;
+                bp.alpha -= bp.decay;
+                if (bp.alpha <= 0) bloodParticles.splice(i, 1);
+            }
+
+            for (let i = fireParticles.length - 1; i >= 0; i--) {
+                let fp = fireParticles[i];
+                fp.x += fp.vx;
+                fp.y += fp.vy;
+                fp.alpha -= fp.decay;
+                if (fp.alpha <= 0) fireParticles.splice(i, 1);
+            }
+
+            // Primary Fail Condition triggered
+            if (player.hp <= 0) {
+                player.hp = 0;
+                isGameRunning = false;
+                triggerScorecard(false);
+            }
+        }
+
+        function handleEnemyCasualty() {
+            if (currentWaveIndex < totalWavesCount) {
+                currentWaveIndex++;
+                setTimeout(() => {
+                    spawnEnemyWave(currentWaveIndex);
+                }, 1000);
+            } else {
+                isGameRunning = false;
+                triggerScorecard(true); // Player won!
+            }
+        }
+
+        /* --- SCORECARD SCREEN GENERATION ENGINE --- */
+        function triggerScorecard(isVictory) {
+            // Drop music baseline sound slightly for scorecard readability
+            bgMusic.volume = 0.3;
+            
+            scorecardOverlay.style.display = 'flex';
+            scoreButtons.innerHTML = ''; // Wipe out dirty placeholders
+            
+            // Pop box framework smoothly
+            setTimeout(() => {
+                scoreBox.classList.add('pop-up');
+            }, 100);
+
+            if (isVictory) {
+                scoreBox.style.borderColor = "var(--neon-green)";
+                scoreHeader.innerText = "🏆 VICTORY 🏆";
+                scoreHeader.style.color = "var(--neon-green)";
+                scoreMessage.innerText = "Congratulations! You have successfully cleared Level One training parameters.";
+                
+                // Mount Double Control Options
+                scoreButtons.innerHTML = `
+                    <button class="score-btn btn-fight" onmouseenter="playCodedSound('hover')" onclick="window.location.href='level-two.html'">Enter Into Real Fight 🥊</button>
+                    <button class="score-btn btn-retry" onmouseenter="playCodedSound('hover')" onclick="window.location.reload()">Re-Practice 🔄</button>
+                `;
+            } else {
+                scoreBox.style.borderColor = "var(--neon-red)";
+                scoreHeader.innerText = "💀 SYSTEM TERMINATED 💀";
+                scoreHeader.style.color = "var(--neon-red)";
+                scoreMessage.innerText = "Ohh no, I think you need one more practice run to stabilize combat configurations.";
+                
+                // Mount Single Retry Option
+                scoreButtons.innerHTML = `
+                    <button class="score-btn btn-fight" style="background-color: var(--neon-red); color:#fff;" onmouseenter="playCodedSound('hover')" onclick="window.location.reload()">Re-Practice 🔄</button>
+                `;
+            }
+        }
+
+        function renderGraphicsFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const groundFloorLine = getGroundY();
+
+            ctx.fillStyle = '#0a050d';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            fireParticles.forEach(fp => {
+                ctx.fillStyle = `hsla(${fp.hue}, 100%, 50%, ${fp.alpha})`;
+                ctx.beginPath();
+                ctx.arc(fp.x, fp.y, fp.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.restore();
+
+            ctx.fillStyle = 'rgba(25, 15, 35, 0.4)';
+            for (let i = 0; i < 8; i++) {
+                ctx.fillRect(starBackgroundOffset + (i * 350), groundFloorLine - 220, 140, 220);
+            }
+
+            ctx.fillStyle = '#160d1c';
+            ctx.fillRect(0, groundFloorLine, canvas.width, canvas.height - groundFloorLine);
+            ctx.fillStyle = '#ff0055'; 
+            ctx.fillRect(0, groundFloorLine, canvas.width, 5);
+
+            ctx.fillStyle = '#3a3a45';
+            rocks.forEach(r => {
+                ctx.fillRect(r.x, r.y, r.width, r.height);
+                ctx.strokeStyle = '#626275';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(r.x, r.y, r.width, r.height);
+            });
+
+            // Draw player
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.fillStyle = '#ffdbac'; ctx.fillRect(11, 0, 22, 22); // Head
+            ctx.fillStyle = '#ff66b2'; ctx.fillRect(4, 22, 36, 28);  // Pink Shirt
+            ctx.fillStyle = '#4B5320'; ctx.fillRect(4, 50, 14, 28);  // Camo Left
+            ctx.fillRect(26, 50, 14, 28); // Camo Right
+            ctx.fillStyle = '#1B4D3E'; ctx.fillRect(6, 56, 8, 6); ctx.fillRect(28, 64, 8, 6);
+            if (player.shieldActive) {
+                ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 4; ctx.beginPath();
+                ctx.arc(22, 38, 52, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.12)'; ctx.fill();
+            }
+            ctx.restore();
+
+            // Draw enemy drone
+            if (enemy.active) {
+                ctx.fillStyle = '#2a2a33'; ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                ctx.strokeStyle = '#4f4f5e'; ctx.lineWidth = 2; ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                ctx.fillStyle = '#ff2233'; ctx.fillRect(enemy.x + 4, enemy.y + 14, 15, 8);
+            }
+
+            ctx.fillStyle = '#33ff99'; playerBullets.forEach(b => ctx.fillRect(b.x, b.y, 16, 5));
+            ctx.fillStyle = '#ff2233'; enemyBullets.forEach(eb => ctx.fillRect(eb.x, eb.y, 14, 5));
+
+            ctx.save();
+            bloodParticles.forEach(bp => {
+                ctx.fillStyle = `rgba(220, 15, 45, ${bp.alpha})`;
+                ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.radius, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.restore();
+        }
+    </script>
+</body>
+</html>

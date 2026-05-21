@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Rescue - System Access</title>
+    <style>
+        /* Gamified Arcade Theme Styling */
+        :root {
+            --bg-dark: #0a0a12;
+            --neon-red: #ff3366;
+            --neon-green: #33ff99;
+            --neon-blue: #00f0ff;
+            --text-white: #ffffff;
+            --text-gray: #8f8fa3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        /* Ambient arcade monitor scanlines */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 999;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        .scene-container {
+            width: 90%;
+            max-width: 950px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* PHASE 0: Gatekeeper Password Screen */
+        .auth-box {
+            border: 4px dashed var(--neon-blue);
+            padding: 3rem 2rem;
+            background: rgba(0, 240, 255, 0.03);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            max-width: 450px;
+            margin: 0 auto;
+            border-radius: 12px;
+        }
+
+        .auth-box h2 {
+            font-size: 1.6rem;
+            letter-spacing: 2px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        .password-input {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--text-gray);
+            padding: 12px 20px;
+            font-size: 1.5rem;
+            color: #ffffff;
+            font-family: monospace;
+            text-align: center;
+            outline: none;
+            width: 80%;
+            letter-spacing: 6px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .password-input:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .password-input.error-state {
+            border-color: var(--neon-red) !important;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.5) !important;
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            letter-spacing: 1px;
+            font-style: italic;
+        }
+
+        /* Action/Retake Buttons */
+        .btn {
+            color: #000000;
+            border: none;
+            padding: 14px 36px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .start-btn {
+            background-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(51, 255, 153, 0.4);
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px var(--neon-green);
+            background-color: #5effad;
+        }
+
+        .retake-btn {
+            background-color: var(--neon-red);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+        }
+
+        .retake-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px var(--neon-red);
+            background-color: #ff5c85;
+        }
+
+        /* Emergency Meeting Action Button */
+        .meeting-btn {
+            background-color: #ffaa00;
+            color: #000000;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.4);
+            border: 3px solid #ffffff;
+            padding: 16px 40px;
+            font-size: 1.3rem;
+            animation: pulse 1.5s infinite alternate;
+            margin: 2rem auto 0 auto;
+        }
+
+        .meeting-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px #ffaa00;
+            background-color: #ffbb33;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px rgba(255, 170, 0, 0.4); }
+            100% { box-shadow: 0 0 25px rgba(255, 170, 0, 0.8); }
+        }
+
+        /* PHASE 1 & 2: Story Blocks */
+        .story-text {
+            font-size: 1.9rem;
+            line-height: 1.8;
+            letter-spacing: 1px;
+            color: var(--text-white);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+            display: none;
+            text-align: center;
+            white-space: normal;
+            width: 100%;
+        }
+
+        .highlight-green {
+            color: var(--neon-green);
+            text-shadow: 0 0 15px var(--neon-green);
+        }
+
+        .highlight-red {
+            color: var(--neon-red);
+            text-shadow: 0 0 15px var(--neon-red);
+        }
+
+        .dialogue-box {
+            border: 4px solid var(--text-white);
+            padding: 2.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: left;
+        }
+
+        .dialogue-line {
+            font-size: 1.6rem;
+            letter-spacing: 1px;
+            min-height: 2.5rem;
+            line-height: 1.5;
+        }
+
+        .audio-status {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .blinker {
+            width: 10px;
+            height: 10px;
+            background-color: var(--neon-red);
+            border-radius: 50%;
+            animation: blink 0.8s infinite alternate;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0.2; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scene-container">
+        
+        <div id="gatekeeper" class="auth-box">
+            <h2>DECRYPT ACCESS KEY</h2>
+            <input type="password" id="passInput" class="password-input" placeholder="•••••••" onkeydown="checkEnterKey(event)">
+            <div class="hint">hint: and the password is u</div>
+            
+            <button id="playBtn" class="btn start-btn" onclick="startStorySequence()">
+                Are you excited to play? ✨
+            </button>
+            <button id="retakeBtn" class="btn retake-btn" onclick="resetPasswordConfig()">
+                Incorrect Password! Try Again
+            </button>
+        </div>
+        
+        <div id="intro-msg" class="story-text"></div>
+
+        <div id="blackout-dialogue" class="dialogue-box">
+            <div class="audio-status">
+                <div class="blinker"></div> INCOMING UNKNOWN LINE...
+            </div>
+            <div id="speaker-line" class="dialogue-line"></div>
+            
+            <button id="meetingBtn" class="btn meeting-btn" onclick="launchEmergencyGame()">
+                Press M to start an emergency meeting 🚨
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+    // Play starting music from the first message until the second audio is played
+    const startingMusic = new Audio('starting-music.mp3');
+    startingMusic.loop = true;
+
+
+        // DOM Handles
+        const gatekeeper = document.getElementById('gatekeeper');
+        const passInput = document.getElementById('passInput');
+        const playBtn = document.getElementById('playBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const introMsg = document.getElementById('intro-msg');
+        const blackoutDialogue = document.getElementById('blackout-dialogue');
+        const speakerLine = document.getElementById('speaker-line');
+        const meetingBtn = document.getElementById('meetingBtn');
+
+        // Audio Pipelines
+        const parentReplyAudio = new Audio('parent_reply.mp3');
+
+        // Cinematic Dialogue Script Config
+        const script = [
+            { speaker: "KIDNAPPER", text: "we kidnaped your kid", color: "var(--neon-red)" },
+            { speaker: "ME", text: "WTF, why what do you want.", color: "var(--neon-green)" },
+            { speaker: "KIDNAPPER", text: "we want 10 lakhs cash", color: "var(--neon-red)" },
+            { speaker: "ME", text: "what the fu** you are saying", color: "var(--neon-green)", playAudio: true }
+        ];
+
+        let scriptIndex = 0;
+
+        // Monitor manual pressing of 'Enter' inside input box
+        function checkEnterKey(event) {
+            if (event.key === "Enter") {
+                verifyPasswordLogic();
+            }
+        }
+
+        // Password matching setup
+        function verifyPasswordLogic() {
+            const userInput = passInput.value.toLowerCase().trim();
+            
+            if (userInput === "anweshu") {
+                passInput.disabled = true;
+                passInput.classList.remove('error-state');
+                retakeBtn.style.display = "none";
+                passInput.style.borderColor = "var(--neon-green)";
+                playBtn.style.display = "block";
+            } else {
+                passInput.classList.add('error-state');
+                playBtn.style.display = "none";
+                retakeBtn.style.display = "block";
+            }
+        }
+
+        // Retake reset setup
+        function resetPasswordConfig() {
+            passInput.value = "";
+            passInput.classList.remove('error-state');
+            retakeBtn.style.display = "none";
+            passInput.focus();
+        }
+
+        // Begins the typewriter story timeline
+        function startStorySequence() {
+            gatekeeper.classList.add('hidden');
+            introMsg.style.display = 'block';
+            // Start the background music as soon as the message is shown
+            startingMusic.currentTime = 0;
+            startingMusic.play().catch(() => {});
+
+            // Set typewriter speed to 60 words per minute (wpm)
+            // 1 word = 5 chars (avg), so 60 wpm = 300 chars/min = 5 chars/sec
+            // 1 char every 200ms
+            const TYPEWRITER_SPEED = 200; // ms per character for 60 wpm
+            const phase1StoryText = `On <span class="highlight-green">26th of May</span> a baby born 👉👶... but she went <span class="highlight-red">missing</span> from the hospital...`;
+
+            typeWriter(introMsg, phase1StoryText, TYPEWRITER_SPEED, () => {
+                // Keep text resting on screen for 2.5 seconds, then transition
+                setTimeout(() => {
+                    introMsg.style.display = 'none';
+                    blackoutDialogue.style.display = 'flex';
+
+                    setTimeout(playNextDialogue, 1000); 
+                }, 2500);
+            });
+        }
+
+        // Universal Custom HTML Typewriter Engine with Integrated Audio
+        // Updated Typewriter Engine perfectly synced to the coded audio sound
+        function typeWriter(element, htmlContent, speed, callback) {
+            element.innerHTML = "";
+            const temp = document.createElement('div');
+            temp.innerHTML = htmlContent;
+            const nodes = Array.from(temp.childNodes);
+
+            let currentNodeIndex = 0;
+            let currentTextIndex = 0;
+
+            function type() {
+                if (currentNodeIndex >= nodes.length) {
+                    if (callback) callback();
+                    return;
+                }
+
+                let node = nodes[currentNodeIndex];
+
+                if (node.nodeType === Node.TEXT_NODE) {
+                    if (currentTextIndex < node.textContent.length) {
+                        const char = node.textContent.charAt(currentTextIndex);
+                        element.innerHTML += char;
+                        currentTextIndex++;
+                        setTimeout(type, speed);
+                    } else {
+                        currentNodeIndex++;
+                        currentTextIndex = 0;
+                        setTimeout(type, speed);
+                    }
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    element.appendChild(node.cloneNode(true));
+                    currentNodeIndex++;
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+
+        // Main dialogue processing loop (Paced dramatically slow)
+        function playNextDialogue() {
+            if (scriptIndex < script.length) {
+                const currentLine = script[scriptIndex];
+                const formattedText = `<span style="color: ${currentLine.color}">${currentLine.speaker}:</span> "${currentLine.text}"`;
+
+                if (currentLine.playAudio) {
+                    // Pause and reset starting music when the second audio is played
+                    startingMusic.pause();
+                    startingMusic.currentTime = 0;
+                    parentReplyAudio.play().catch(e => console.log("Audio notice:", e));
+                }
+
+                // Use the same TYPEWRITER_SPEED as above for human-readable typing
+                const TYPEWRITER_SPEED = 200; // ms per character for 60 wpm
+                typeWriter(speakerLine, formattedText, TYPEWRITER_SPEED, () => {
+                    scriptIndex++;
+                    // 4 full seconds break between exchanges
+                    setTimeout(playNextDialogue, 4000); 
+                });
+            } else {
+                // Show the Emergency Meeting action button at the end of the conversation
+                setTimeout(() => {
+                    meetingBtn.style.display = "block";
+
+                    // Listen for keyboard "M" or "m" stroke to also trigger it
+                    window.addEventListener('keydown', handleMeetingShortcut);
+                }, 1000);
+            }
+        }
+
+        // Keyboard tracking shortcut for emergency meeting
+        function handleMeetingShortcut(event) {
+            if (event.key === "m" || event.key === "M") {
+                window.removeEventListener('keydown', handleMeetingShortcut);
+                launchEmergencyGame();
+            }
+        }
+
+        // Ultimate execution launchpad
+        function launchEmergencyGame() {
+            blackoutDialogue.style.display = 'none';
+            // Redirect to player-selection.html
+            window.location.href = 'player-selection.html';
+        }
+    </script>
+</body>
+</html>
