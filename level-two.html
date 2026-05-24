@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 2: The Toxic Buwas</title>
+    <style>
+        :root {
+            --bg-dark: #070202;
+            --neon-blue: #00f0ff;
+            --neon-pink: #ff007f;
+            --neon-green: #33ff99;
+            --neon-red: #ff2233;
+            --neon-gold: #ffcc00;
+            --text-white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            z-index: 999;
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Top HUD Bar Matrix Layout */
+        #hudContainer {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .hud-group {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .hud-metric {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .hud-label {
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .bar-container {
+            width: 180px;
+            height: 14px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 100%;
+            transition: width 0.15s ease-out;
+        }
+
+        #agentHpBar { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+        #shieldBar { background: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); }
+        #enemyHpBar { background: var(--neon-red); box-shadow: 0 0 8px var(--neon-red); }
+
+        .ammo-counter {
+            font-size: 1.4rem;
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255,255,255,0.5);
+        }
+
+        /* Boss Arrival Announcement Banner */
+        #bossAnnouncement {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.8rem;
+            color: var(--neon-gold);
+            text-shadow: 0 0 20px rgba(255, 204, 0, 0.8), 0 0 40px rgba(255, 34, 51, 0.5);
+            letter-spacing: 4px;
+            text-align: center;
+            z-index: 4;
+            display: none;
+            animation: bossGlitch 0.4s infinite alternate;
+        }
+
+        @keyframes bossGlitch {
+            0% { transform: translateX(-50%) skewX(-2deg); }
+            100% { transform: translateX(-48%) skewX(2deg); text-shadow: 0 0 25px #ff2233; }
+        }
+
+        /* 10-Second Countdown Overlay Box */
+        #countdownOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 2, 2, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        #countdownTimer {
+            font-size: 7rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 25px var(--neon-pink);
+            margin-bottom: 2rem;
+            animation: pulse 1s infinite alternate;
+        }
+
+        .guide-box {
+            border: 2px dashed var(--neon-orange);
+            background: rgba(255, 85, 0, 0.04);
+            padding: 1.5rem 2.5rem;
+            border-radius: 12px;
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 0 20px rgba(255, 85, 0, 0.15);
+        }
+
+        .story-alert {
+            font-size: 1.3rem;
+            color: var(--neon-gold);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255,204,0,0.3);
+        }
+
+        .guide-line {
+            font-size: 1.1rem;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .key-badge {
+            background: #25252b;
+            border: 1px solid #fff;
+            padding: 2px 10px;
+            border-radius: 4px;
+        }
+
+        /* End Scorecard Overlay Frame */
+        #scorecardOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 2, 2, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .score-box {
+            border: 4px solid #fff;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 3rem;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            transform: scale(0.8);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .score-box.pop-up {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .score-box h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+        }
+
+        .score-box p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .score-buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .score-btn {
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: inherit;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .btn-fight {
+            background-color: var(--neon-gold);
+            color: #000;
+        }
+        .btn-fight:hover {
+            background-color: #ffe066;
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px var(--neon-gold);
+        }
+
+        .btn-retry {
+            background-color: var(--neon-red);
+            color: #fff;
+        }
+        .btn-retry:hover {
+            background-color: #ff5c85;
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px var(--neon-red);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gameContainer">
+        <div id="hudContainer">
+            <div class="hud-group">
+                <div class="hud-metric">
+                    <span class="hud-label" style="color: var(--neon-green)">AGENT HP</span>
+                    <div class="bar-container"><div id="agentHpBar" class="progress-bar"></div></div>
+                </div>
+                <div class="hud-metric">
+                    <span class="hud-label" style="color: var(--neon-blue)">SHIELD CAP</span>
+                    <div class="bar-container"><div id="shieldBar" class="progress-bar"></div></div>
+                </div>
+                <div class="hud-metric">
+                    <span class="hud-label" style="color: #ffffff">AMMO</span>
+                    <div id="ammoDisplay" class="ammo-counter">25/25</div>
+                </div>
+            </div>
+
+            <div class="hud-group">
+                <div class="hud-metric" style="align-items: flex-end;">
+                    <span id="enemyLabel" class="hud-label" style="color: var(--neon-red)">BUWA TRACKER (3/2)</span>
+                    <div class="bar-container"><div id="enemyHpBar" class="progress-bar"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="bossAnnouncement">HERE IS ENEMY TOXIC BUWA 3</div>
+
+        <div id="countdownOverlay">
+            <div id="countdownTimer">10</div>
+            <div class="guide-box">
+                <div class="story-alert">⚠️ WARNING: here is the encounter with kidnapper number 3 and 2.</div>
+                <div class="guide-line"><span>JUMP OVER OBSTACLES:</span> <span class="key-badge">SPACEBAR</span></div>
+                <div class="guide-line"><span>DEFENSIVE SHIELD:</span> <span class="key-badge">S KEY</span></div>
+                <div class="guide-line"><span>FIRE PLASMA GUN:</span> <span class="key-badge">F KEY</span></div>
+            </div>
+        </div>
+
+        <div id="scorecardOverlay">
+            <div id="scoreBox" class="score-box">
+                <h2 id="scoreHeader">MATCH RESULTS</h2>
+                <p id="scoreMessage">Analyzing data...</p>
+                <div class="score-buttons-container" id="scoreButtons"></div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const countdownOverlay = document.getElementById('countdownOverlay');
+        const countdownTimer = document.getElementById('countdownTimer');
+        const bossAnnouncement = document.getElementById('bossAnnouncement');
+
+        // Scorecard elements
+        const scorecardOverlay = document.getElementById('scorecardOverlay');
+        const scoreBox = document.getElementById('scoreBox');
+        const scoreHeader = document.getElementById('scoreHeader');
+        const scoreMessage = document.getElementById('scoreMessage');
+        const scoreButtons = document.getElementById('scoreButtons');
+
+        // HUD endpoints
+        const agentHpBar = document.getElementById('agentHpBar');
+        const shieldBar = document.getElementById('shieldBar');
+        const ammoDisplay = document.getElementById('ammoDisplay');
+        const enemyLabel = document.getElementById('enemyLabel');
+        const enemyHpBar = document.getElementById('enemyHpBar');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Audio Stream setup
+        const bgMusic = new Audio('game-background.mp3');
+        bgMusic.loop = true;
+        const okSound = new Audio('ok-sound.mp3');
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playCodedSound(type) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'jump') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(650, now + 0.14);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+                osc.start(now); osc.stop(now + 0.14);
+            } else if (type === 'fire') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(750, now);
+                osc.frequency.linearRampToValueAtTime(150, now + 0.08);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'shield') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.linearRampToValueAtTime(480, now + 0.18);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+                osc.start(now); osc.stop(now + 0.18);
+            } else if (type === 'tongue') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.2);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'hover') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
+            }
+        }
+
+        // Countdown sequence controller
+        let countdownValue = 10;
+        let isGameRunning = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            bgMusic.play().catch(() => {});
+        });
+
+        window.addEventListener('keydown', function engageAudio() {
+            if(bgMusic.paused) bgMusic.play();
+            window.removeEventListener('keydown', engageAudio);
+        });
+
+        const countdownInterval = setInterval(() => {
+            countdownValue--;
+            countdownTimer.innerText = countdownValue;
+            if (countdownValue <= 0) {
+                clearInterval(countdownInterval);
+                countdownOverlay.style.display = 'none';
+                isGameRunning = true;
+                triggerBossBanner(3); 
+                gameLoop();
+            }
+        }, 1000);
+
+        function triggerBossBanner(id) {
+            bossAnnouncement.innerText = `HERE IS ENEMY TOXIC BUWA ${id}`;
+            bossAnnouncement.style.display = 'block';
+            setTimeout(() => {
+                bossAnnouncement.style.display = 'none';
+            }, 3000); 
+        }
+
+        /* --- STABLE CORE CONFIGURATIONS --- */
+        const getGroundY = () => canvas.height - 120;
+
+        const player = {
+            x: 250,
+            y: 0,
+            width: 44,
+            height: 78,
+            vy: 0,
+            gravity: 0.65,
+            isJumping: false,
+            hp: 100,
+            shieldHp: 100,
+            shieldActive: false,
+            ammo: 25 
+        };
+
+        let activeBuwaID = 3; 
+
+        const buwaBoss = {
+            x: 0,
+            y: 0,
+            width: 50,
+            height: 85,
+            hp: 100,
+            active: true,
+            attackTimer: 0,
+            tongueX: 0,
+            isAttacking: false,
+            attackStage: 0 
+        };
+
+        function spawnBuwaBoss(id) {
+            buwaBoss.x = canvas.width - 250;
+            buwaBoss.y = getGroundY() - buwaBoss.height;
+            buwaBoss.hp = 100;
+            buwaBoss.active = true;
+            buwaBoss.isAttacking = false;
+            buwaBoss.attackStage = 0;
+            buwaBoss.attackTimer = 0;
+            enemyLabel.innerText = `BUWA TRACKER (${id}/2)`;
+            triggerBossBanner(id);
+        }
+
+        // Particle System Arrays
+        const bloodParticles = [];
+        const fireParticles = [];
+        const rocks = [];
+        const playerBullets = [];
+
+        let rockSpawnTimer = 0;
+        let starBackgroundOffset = 0;
+
+        function triggerBloodBurst(x, y) {
+            for (let i = 0; i < 25; i++) {
+                bloodParticles.push({
+                    x: x, y: y,
+                    vx: (Math.random() * 4 - 2),
+                    vy: (Math.random() * -5 - 2),
+                    radius: Math.random() * 3 + 1.5,
+                    alpha: 1,
+                    decay: Math.random() * 0.03 + 0.02
+                });
+            }
+        }
+
+        function pushFireParticle() {
+            fireParticles.push({
+                x: Math.random() * canvas.width, y: canvas.height,
+                vx: Math.random() * 1.5 - 0.75,
+                vy: Math.random() * -3 - 1,
+                size: Math.random() * 20 + 8,
+                hue: Math.random() * 25 + 10,
+                alpha: 1,
+                decay: Math.random() * 0.015 + 0.01
+            });
+        }
+
+        const keysPressed = {};
+        window.addEventListener('keydown', (e) => {
+            keysPressed[e.key.toLowerCase()] = true;
+            if (!isGameRunning) return;
+
+            if (e.key === " " || e.key === "Spacebar") {
+                if (!player.isJumping) {
+                    player.vy = -14.5;
+                    player.isJumping = true;
+                    playCodedSound('jump');
+                }
+            }
+            if (e.key.toLowerCase() === 'f') {
+                if (player.ammo > 0) {
+                    player.ammo--;
+                    playerBullets.push({ x: player.x + player.width, y: player.y + 28, speed: 13 });
+                    playCodedSound('fire');
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keysPressed[e.key.toLowerCase()] = false;
+        });
+
+        function checkBoxesOverlapping(r1, r2) {
+            return r1.x < r2.x + r2.width &&
+                   r1.x + r1.width > r2.x &&
+                   r1.y < r2.y + r2.height &&
+                   r1.y + r1.height > r2.y;
+        }
+
+        player.y = getGroundY() - player.height;
+        spawnBuwaBoss(activeBuwaID);
+
+        /* --- GAME ENGINE MAIN LOOP --- */
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            updateGameLogic();
+            renderGraphics();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateGameLogic() {
+            const groundFloorLine = getGroundY();
+
+            agentHpBar.style.width = `${Math.max(0, player.hp)}%`;
+            shieldBar.style.width = `${Math.max(0, player.shieldHp)}%`;
+            enemyHpBar.style.width = `${Math.max(0, buwaBoss.hp)}%`;
+            ammoDisplay.innerText = `${player.ammo}/25`;
+
+            if (!player.shieldActive && player.shieldHp < 100) {
+                player.shieldHp += 0.05;
+            }
+
+            if (Math.random() < 0.4) pushFireParticle();
+
+            starBackgroundOffset -= 1.5;
+            if (starBackgroundOffset <= -canvas.width) starBackgroundOffset = 0;
+
+            if (keysPressed['s'] && player.shieldHp > 0) {
+                if (!player.shieldActive) playCodedSound('shield');
+                player.shieldActive = true;
+            } else {
+                player.shieldActive = false;
+            }
+
+            player.vy += player.gravity;
+            player.y += player.vy;
+
+            if (player.y > groundFloorLine - player.height) {
+                player.y = groundFloorLine - player.height;
+                player.vy = 0;
+                player.isJumping = false;
+            }
+
+            rockSpawnTimer++;
+            if (rockSpawnTimer > 180) { 
+                rocks.push({ x: canvas.width, y: groundFloorLine - 35, width: 55, height: 35, hitRegistered: false });
+                rockSpawnTimer = 0;
+            }
+
+            for (let i = rocks.length - 1; i >= 0; i--) {
+                rocks[i].x -= 3.8; 
+
+                let rBox = { x: rocks[i].x, y: rocks[i].y, width: rocks[i].width, height: rocks[i].height };
+                let pBox = { x: player.x, y: player.y, width: player.width, height: player.height };
+
+                if (checkBoxesOverlapping(pBox, rBox)) {
+                    if (player.vy > 0 && player.y + player.height - player.vy <= rocks[i].y + 12) {
+                        player.y = rocks[i].y - player.height;
+                        player.vy = 0;
+                        player.isJumping = false;
+                    } else if (!rocks[i].hitRegistered) {
+                        rocks[i].hitRegistered = true;
+                        if (!player.shieldActive) {
+                            player.hp -= 5;
+                            triggerBloodBurst(player.x + player.width/2, player.y - 10);
+                        } else {
+                            player.shieldHp -= 20;
+                        }
+                    }
+                }
+                if (rocks[i].x + rocks[i].width < 0) rocks.splice(i, 1);
+            }
+
+            // Process Friendly Gunfire
+            for (let i = playerBullets.length - 1; i >= 0; i--) {
+                playerBullets[i].x += playerBullets[i].speed;
+                let b = playerBullets[i];
+
+                if (buwaBoss.active && b.x > buwaBoss.x && b.x < buwaBoss.x + buwaBoss.width && b.y > buwaBoss.y && b.y < buwaBoss.y + buwaBoss.height) {
+                    buwaBoss.hp -= 10; // UPDATED: Bullet damage decreased to 10
+                    playerBullets.splice(i, 1);
+                    
+                    if (buwaBoss.hp <= 0) {
+                        buwaBoss.active = false;
+                        buwaBoss.hp = 0;
+                        handleBuwaCasualty();
+                    }
+                    continue;
+                }
+                if (b.x > canvas.width) playerBullets.splice(i, 1);
+            }
+
+            if (buwaBoss.active) {
+                buwaBoss.attackTimer++;
+                
+                if (buwaBoss.attackTimer > 150 && !buwaBoss.isAttacking) {
+                    buwaBoss.isAttacking = true;
+                    buwaBoss.attackStage = 1; 
+                    buwaBoss.tongueX = buwaBoss.x;
+                    playCodedSound('tongue');
+                }
+
+                if (buwaBoss.isAttacking) {
+                    if (buwaBoss.attackStage === 1) {
+                        buwaBoss.tongueX -= 25; 
+                        
+                        let tongueTipBox = { x: buwaBoss.tongueX, y: buwaBoss.y + 20, width: 20, height: 8 };
+                        let pBox = { x: player.x, y: player.y, width: player.width, height: player.height };
+
+                        if (checkBoxesOverlapping(tongueTipBox, pBox)) {
+                            if (player.shieldActive) {
+                                player.shieldHp -= 25;
+                            } else {
+                                player.hp -= 10; 
+                                triggerBloodBurst(player.x + player.width/2, player.y - 10);
+                            }
+                            buwaBoss.attackStage = 2; 
+                        }
+
+                        if (buwaBoss.tongueX < player.x - 100 || buwaBoss.tongueX < 0) {
+                            buwaBoss.attackStage = 2;
+                        }
+                    } else if (buwaBoss.attackStage === 2) {
+                        buwaBoss.tongueX += 35; 
+                        if (buwaBoss.tongueX >= buwaBoss.x) {
+                            buwaBoss.isAttacking = false;
+                            buwaBoss.attackStage = 0;
+                            buwaBoss.attackTimer = 0;
+                        }
+                    }
+                }
+            }
+
+            for (let i = bloodParticles.length - 1; i >= 0; i--) {
+                let bp = bloodParticles[i];
+                bp.x += bp.vx; bp.y += bp.vy; bp.vy += 0.2; bp.alpha -= bp.decay;
+                if (bp.alpha <= 0) bloodParticles.splice(i, 1);
+            }
+            for (let i = fireParticles.length - 1; i >= 0; i--) {
+                let fp = fireParticles[i];
+                fp.x += fp.vx; fp.y += fp.vy; fp.alpha -= fp.decay;
+                if (fp.alpha <= 0) fireParticles.splice(i, 1);
+            }
+
+            if (player.hp <= 0) {
+                player.hp = 0;
+                isGameRunning = false;
+                triggerScorecard(false);
+            }
+        }
+
+        function handleBuwaCasualty() {
+            if (activeBuwaID === 3) {
+                activeBuwaID = 2; 
+                setTimeout(() => {
+                    spawnBuwaBoss(activeBuwaID);
+                }, 1200);
+            } else {
+                isGameRunning = false;
+                triggerScorecard(true); 
+            }
+        }
+
+        function triggerScorecard(isVictory) {
+            bgMusic.pause(); 
+            
+            okSound.currentTime = 0;
+            okSound.play().catch(e => console.log("OK Sound played."));
+
+            scorecardOverlay.style.display = 'flex';
+            scoreButtons.innerHTML = '';
+            
+            setTimeout(() => {
+                scoreBox.classList.add('pop-up');
+            }, 100);
+
+            if (isVictory) {
+                scoreBox.style.borderColor = "var(--neon-green)";
+                scoreHeader.innerText = "🏆 MISSION CLEARED 🏆";
+                scoreHeader.style.color = "var(--neon-green)";
+                scoreMessage.innerText = "Incredible reflex control. Both Toxic Buwas have been completely routed from the sectors!";
+                
+                scoreButtons.innerHTML = `
+                    <button class="score-btn btn-fight" onmouseenter="playCodedSound('hover')" onclick="window.location.href='final-level.html'">Move To Final Match 🥊</button>
+                `;
+            } else {
+                scoreBox.style.borderColor = "var(--neon-red)";
+                scoreHeader.innerText = "💀 ENCOUNTER OVER 💀";
+                scoreHeader.style.color = "var(--neon-red)";
+                scoreMessage.innerText = "Ohh no, those toxic tongues caught you off guard! Re-calibrate and clear this threat.";
+                
+                scoreButtons.innerHTML = `
+                    <button class="score-btn btn-retry" onmouseenter="playCodedSound('hover')" onclick="window.location.reload()">Retake Practice 🔄</button>
+                `;
+            }
+        }
+
+        function renderGraphics() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const groundFloorLine = getGroundY();
+
+            ctx.fillStyle = '#0a050d';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            fireParticles.forEach(fp => {
+                ctx.fillStyle = `hsla(${fp.hue}, 100%, 50%, ${fp.alpha})`;
+                ctx.beginPath(); ctx.arc(fp.x, fp.y, fp.size, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.restore();
+
+            ctx.fillStyle = 'rgba(35, 12, 20, 0.35)';
+            for (let i = 0; i < 8; i++) {
+                ctx.fillRect(starBackgroundOffset + (i * 350), groundFloorLine - 220, 140, 220);
+            }
+
+            ctx.fillStyle = '#1c0d0d';
+            ctx.fillRect(0, groundFloorLine, canvas.width, canvas.height - groundFloorLine);
+            ctx.fillStyle = '#ff3300'; 
+            ctx.fillRect(0, groundFloorLine, canvas.width, 5);
+
+            ctx.fillStyle = '#423737';
+            rocks.forEach(r => {
+                ctx.fillRect(r.x, r.y, r.width, r.height);
+                ctx.strokeStyle = '#6e5959'; ctx.lineWidth = 2; ctx.strokeRect(r.x, r.y, r.width, r.height);
+            });
+
+            // Player character
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.fillStyle = '#ffdbac'; ctx.fillRect(11, 0, 22, 22);
+            ctx.fillStyle = '#ff66b2'; ctx.fillRect(4, 22, 36, 28); 
+            ctx.fillStyle = '#4B5320'; ctx.fillRect(4, 50, 14, 28); ctx.fillRect(26, 50, 14, 28);
+            ctx.fillStyle = '#1B4D3E'; ctx.fillRect(6, 56, 8, 6); ctx.fillRect(28, 64, 8, 6);
+            if (player.shieldActive) {
+                ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 4; ctx.beginPath();
+                ctx.arc(22, 38, 52, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.12)'; ctx.fill();
+            }
+            ctx.restore();
+
+            // --- DRAW TOXIC BUWA CHARACTER ---
+            if (buwaBoss.active) {
+                ctx.save();
+                ctx.translate(buwaBoss.x, buwaBoss.y);
+
+                // Head Node Frame
+                ctx.fillStyle = '#fce5cd';
+                ctx.fillRect(14, 0, 22, 22);
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(18, 6, 4, 4);
+                ctx.fillRect(28, 6, 4, 4);
+
+                // Costume logic based on which Buwa is on screen
+                if (activeBuwaID === 2) {
+                    // UPDATED: Buwa 2 wears a Blue and Dark Blue Saree layout
+                    ctx.fillStyle = '#0066ff'; // Vibrant royal blue base
+                    ctx.fillRect(5, 22, 40, 63);
+
+                    ctx.fillStyle = '#002b80'; // Deep dark blue pallu sashes
+                    ctx.fillRect(5, 22, 12, 63); 
+                    ctx.fillRect(17, 28, 20, 12); 
+                } else {
+                    // Buwa 3 keeps original Yellow layout
+                    ctx.fillStyle = '#ffd700'; 
+                    ctx.fillRect(5, 22, 40, 63);
+
+                    ctx.fillStyle = '#b8860b'; 
+                    ctx.fillRect(5, 22, 12, 63); 
+                    ctx.fillRect(17, 28, 20, 12); 
+                }
+
+                ctx.restore();
+
+                // Tongue lash
+                if (buwaBoss.isAttacking) {
+                    ctx.save();
+                    ctx.strokeStyle = '#ff3366'; 
+                    ctx.lineWidth = 6;
+                    ctx.beginPath();
+                    ctx.moveTo(buwaBoss.x + 20, buwaBoss.y + 20);
+                    ctx.lineTo(buwaBoss.tongueX, buwaBoss.y + 20);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#33ff99';
+                    ctx.fillRect(buwaBoss.tongueX - 4, buwaBoss.y + 18, 8, 8);
+                    ctx.restore();
+                }
+            }
+
+            ctx.fillStyle = '#33ff99'; playerBullets.forEach(b => ctx.fillRect(b.x, b.y, 16, 5));
+
+            ctx.save();
+            bloodParticles.forEach(bp => {
+                ctx.fillStyle = `rgba(220, 15, 45, ${bp.alpha})`;
+                ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.radius, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.restore();
+        }
+    </script>
+</body>
+</html>

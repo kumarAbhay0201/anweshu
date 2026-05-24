@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation: Crying Baby - Mission Credits</title>
+    <style>
+        :root {
+            --bg-dark: #030105;
+            --neon-gold: #ffcc00;
+            --neon-green: #33ff99;
+            --neon-blue: #00f0ff;
+            --neon-pink: #ff007f;
+            --neon-red: #ff2233;
+            --neon-orange: #ff6600;
+            --text-white: #ffffff;
+            --text-gray: #8e8e9f;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; background-color: var(--bg-dark); color: var(--text-white); font-family: 'Courier New', monospace; font-weight: bold; overflow: hidden; }
+
+        /* CRT Scanline Screen Overlay Filter */
+        body::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+            z-index: 999; background-size: 100% 4px; pointer-events: none;
+        }
+
+        /* Ambient background canvas */
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        /* PHASE 1: Dramatic Initial Blackout Overlay */
+        #blackoutOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000000; z-index: 100; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+        }
+        .sync-pulse {
+            font-size: 1.6rem; letter-spacing: 4px; color: var(--neon-blue);
+            text-shadow: 0 0 15px var(--neon-blue); animation: pulse 0.8s infinite alternate;
+        }
+
+        /* PHASE 2: Main Scrolling Credits Arena */
+        #creditsWrapper {
+            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 800px; text-align: center; z-index: 5;
+            display: none; flex-direction: column; gap: 4.5rem; pointer-events: none;
+        }
+
+        .credit-title {
+            font-size: 2.2rem; color: var(--neon-gold); text-shadow: 0 0 15px var(--neon-gold);
+            letter-spacing: 3px; text-transform: uppercase; margin-bottom: 0.5rem;
+        }
+        .credit-name { font-size: 1.6rem; color: #fff; letter-spacing: 1px; }
+        .credit-desc { font-size: 1.1rem; color: var(--text-gray); margin-top: 5px; font-weight: normal; }
+
+        /* Group card blocks */
+        .credit-group {
+            background: rgba(255,255,255,0.02); padding: 2rem; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center; gap: 1rem;
+        }
+
+        /* Media Frame Displays */
+        .img-badge-frame {
+            width: 160px; height: 160px; background: #111;
+            border: 4px solid var(--text-white); border-radius: 8px;
+            overflow: hidden; box-shadow: 0 0 15px rgba(255,255,255,0.2);
+        }
+        .img-badge-frame img { width: 100%; height: 100%; object-fit: cover; }
+
+        .highlight-green { color: var(--neon-green) !important; text-shadow: 0 0 10px var(--neon-green); }
+        .highlight-red { color: var(--neon-red) !important; text-shadow: 0 0 10px var(--neon-red); }
+        .highlight-blue { color: var(--neon-blue) !important; text-shadow: 0 0 10px var(--neon-blue); }
+
+        @keyframes pulse {
+            0% { opacity: 0.3; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1.02); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="creditsCanvas"></canvas>
+
+    <div id="blackoutOverlay">
+        <div class="sync-pulse">[ INITIALIZING AUDIO INJECTOR SECTOR... ]</div>
+        <p style="color: #444; font-size:0.9rem; margin-top: 20px; letter-spacing:1px;">CLICK ANYWHERE IF TRACK DELAYS</p>
+    </div>
+
+    <div id="creditsWrapper">
+        
+        <div>
+            <h1 class="credit-title" style="font-size: 3rem; color: #fff; text-shadow: 0 0 25px rgba(255,255,255,0.5);">MISSION COMPLETED</h1>
+            <p class="credit-desc" style="font-size: 1.3rem; margin-top:10px;">TACTICAL RECORD STATUS: SUCCESSFUL</p>
+        </div>
+
+        <div class="credit-group" style="border-color: var(--neon-green); background: rgba(51, 255, 153, 0.01);">
+            <div class="credit-title highlight-green">LEAD GAME ARCHITECT</div>
+            <div class="img-badge-frame" style="width: 200px; height: 200px; border-color: var(--neon-green); box-shadow: 0 0 15px var(--neon-green);">
+                <img src="Commando-abhay.jpeg" alt="Commando Abhay" />
+            </div>
+            <div class="credit-name">COMMANDO ABHAY</div>
+            <div class="credit-desc">Chief System Developer & Gameplay Intelligence Director</div>
+        </div>
+
+        <div class="credit-group" style="border-color: var(--neon-pink); background: rgba(255, 0, 127, 0.01);">
+            <div class="credit-title" style="color: var(--neon-pink); text-shadow:0 0 10px var(--neon-pink)">THE PRIZED ASSET</div>
+            <div class="img-badge-frame" style="border-color: var(--neon-pink); box-shadow: 0 0 15px var(--neon-pink);">
+                <img src="crying-baby.jpg.jpeg" alt="Baby Anwesha">
+            </div>
+            <div class="credit-name">CRYING-BABY ANWESHA</div>
+            <div class="credit-desc">The Main Core Character of the Rescue Operation</div>
+        </div>
+
+        <div class="credit-group" style="border-color: var(--neon-red); background: rgba(255, 34, 51, 0.01);">
+            <div class="credit-title highlight-red">SUPREME ELITE FIGHTER</div>
+            <div class="img-badge-frame" style="width: 220px; height: 220px; border-color: var(--neon-red); box-shadow: 0 0 15px var(--neon-red);">
+                <img src="captain-Vikram-Batra.jpg" alt="Captain Vikram Batra" />
+            </div>
+            <div class="credit-name">THE CAPTAIN VIKRAM BATRA</div>
+            <div class="credit-desc">Main Tactical Vanguard & Ultimate War Front Combatant</div>
+        </div>
+
+        <div class="credit-group" style="border-color: var(--neon-blue); background: rgba(0, 240, 255, 0.01);">
+            <div class="credit-title highlight-blue">OPERATIONAL FIELD AGENTS</div>
+            <div style="display: flex; gap: 32px; justify-content: center; align-items: center; margin-bottom: 10px;">
+                <div class="img-badge-frame" style="width: 140px; height: 140px; border-color: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue);">
+                    <img src="agent-sid.png" alt="Agent Sid" />
+                </div>
+                <div class="img-badge-frame" style="width: 140px; height: 140px; border-color: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue);">
+                    <img src="agent-jaskirat.jpg" alt="Agent Jaskirat" />
+                </div>
+            </div>
+            <div class="credit-name" style="margin-bottom: 5px;">AGENT SID</div>
+            <div class="credit-name">AGENT JASKIRAT</div>
+            <div class="credit-desc">Special Response Unit & Asset Extraction Squad</div>
+        </div>
+
+        <div>
+            <div class="credit-title">CINEMATIC INSPIRATION</div>
+            <div class="credit-name">CREATORS OF SHERSHAAH MOVIE</div>
+            <div class="credit-desc">For fuels of deep patriotic motivation and valour</div>
+        </div>
+
+        <div>
+            <div class="credit-title">AUDIO TRANSMISSION MASTERS</div>
+            <div class="credit-name">JIO STUDIOS</div>
+            <div class="credit-desc">Soundtrack Atmosphere Providers</div>
+        </div>
+
+        <div>
+            <div class="credit-title">TACTICAL VIDEO SURVEILLANCE</div>
+            <div class="credit-name">AMAZON PRIME VIDEO</div>
+            <div class="credit-desc">Encrypted Footage Supply Feeds</div>
+        </div>
+
+        <div>
+            <div class="credit-title">AI COLLABORATIVE ENGINE</div>
+            <div class="credit-name highlight-blue">GEMINI AI</div>
+            <div class="credit-desc">Autonomous Code Synthesis & VFX Optimization Architect</div>
+        </div>
+
+        <div>
+            <div class="credit-title">DEVELOPMENT FORGE MATRIX</div>
+            <div class="credit-name" style="font-size:1.3rem; letter-spacing:3px;">HTML5 • CSS3 • VANILLA JAVASCRIPT</div>
+            <div class="credit-desc">Native Engine Architecture Stack</div>
+        </div>
+
+        <div>
+            <div class="credit-title">MEDIA DECK PIPELINES</div>
+            <div class="credit-name" style="font-size:1.3rem;">YOUTUBE & PIXABAY AUDIO NETWORKS</div>
+            <div class="credit-desc">Open Source Sound Effects Infrastructure</div>
+        </div>
+
+        <div style="margin-top: 6rem; margin-bottom: 8rem;">
+            <h2 style="color: var(--neon-gold); font-size: 2rem; letter-spacing: 4px; text-shadow: 0 0 10px var(--neon-gold);">YEH DIL MAANGE MORE! 🇮🇳</h2>
+            <p class="credit-desc" style="margin-top: 15px;">[ TRANSMISSION ENDED — POWERING DOWN ARCADE ]</p>
+        </div>
+
+    </div>
+
+    <script {nonce}>
+        const canvas = document.getElementById('creditsCanvas');
+        const ctx = canvas.getContext('2d');
+        const blackoutOverlay = document.getElementById('blackoutOverlay');
+        const creditsWrapper = document.getElementById('creditsWrapper');
+
+        // Audio Asset Configuration
+        const victoryMusic = new Audio('credit-d.mp3');
+
+        // Skip logic: Jump over the silent intro straight into the 10th-second drop marker!
+        victoryMusic.currentTime = 10; 
+
+        window.addEventListener('DOMContentLoaded', () => {
+            sizeCanvas();
+            victoryMusic.play().then(() => {
+                handleCinematicTimeline();
+            }).catch(() => {
+                document.body.addEventListener('click', () => {
+                    if (victoryMusic.paused) {
+                        victoryMusic.play();
+                        handleCinematicTimeline();
+                    }
+                }, { once: true });
+            });
+        });
+
+        function sizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', sizeCanvas);
+
+        function handleCinematicTimeline() {
+            setTimeout(() => {
+                blackoutOverlay.style.display = 'none';
+                creditsWrapper.style.display = 'flex';
+                beginCreditsScroll();
+            }, 3000); 
+        }
+
+        let scrollPositionY = window.innerHeight;
+        const scrollSpeedPacing = 0.85; 
+
+        function beginCreditsScroll() {
+            function loopScroll() {
+                scrollPositionY -= scrollSpeedPacing;
+                creditsWrapper.style.top = `${scrollPositionY}px`;
+
+                const wrapperBounds = creditsWrapper.getBoundingClientRect();
+                if (wrapperBounds.bottom > 0) {
+                    requestAnimationFrame(loopScroll);
+                } else {
+                    setTimeout(() => {
+                        victoryMusic.pause();
+                        alert("🎉 Game Credits Complete! Thank you for playing Operation: Crying Baby.");
+                    }, 2000);
+                }
+            }
+            loopScroll();
+        }
+
+        /* --- THE ARCADE MATRIX DIGITAL BACKDROP --- */
+        const stardeck = [];
+        for (let i = 0; i < 75; i++) {
+            stardeck.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                radius: Math.random() * 2 + 0.5,
+                speedY: Math.random() * -0.4 - 0.1, 
+                alpha: Math.random() * 0.7 + 0.3
+            });
+        }
+
+        function animateMatrixBackdrop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#030105';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            stardeck.forEach(star => {
+                ctx.save();
+                ctx.fillStyle = `rgba(0, 240, 255, ${star.alpha})`; 
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                star.y += star.speedY;
+                if (star.y < -10) {
+                    star.y = canvas.height + 10;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+
+            requestAnimationFrame(animateMatrixBackdrop);
+        }
+        animateMatrixBackdrop();
+    </script>
+</body>
+</html>
